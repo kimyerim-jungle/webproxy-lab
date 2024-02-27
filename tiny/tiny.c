@@ -144,7 +144,7 @@ void read_requesthdrs(rio_t *rp, int fd, int ptr)
     srcp = Mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, ptr, 0);
     Close(ptr);
     Rio_writen(fd, srcp, sbuf.st_size);
-
+    Munmap(srcp, sbuf.st_size);
     return;
 }
 
