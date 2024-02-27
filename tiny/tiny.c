@@ -162,11 +162,14 @@ void serve_static(int fd, char *filename, int filesize)
     printf("Response headers:\n");
     printf("%s", buf);
 
-    srcfd = Open(filename, O_RDONLY, 0);
-    srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0);
+    srcfd = Open(filename, O_RDONLY, 0);  // 오픈햇죠 html
+    //srcp = Mmap(0, filesize, PROT_READ, MAP_PRIVATE, srcfd, 0); // 가상메모리 올리는 함수
+    srcp = Malloc(filesize); // 사이즈만큼 멀록햇죠
+    Rio_readn(srcfd, srcp, filesize); // html에서 srcp로 이동햇죠
     Close(srcfd);
-    Rio_writen(fd, srcp, filesize);
-    Munmap(srcp, filesize);
+    Rio_writen(fd, srcp, filesize); // fd로 전송
+    
+    //Munmap(srcp, filesize); // 가상메모리 내리는 함수
 }
 
 void serve_dynamic(int fd, char *filename, char *cgiargs)
