@@ -113,8 +113,6 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longms
     Rio_writen(fd, body, strlen(body));
 }
 
-
-
 void read_requesthdrs(rio_t *rp, int fd, int ptr)
 {
     char *srcp, buf[MAXLINE], header[MAXBUF];
@@ -140,7 +138,7 @@ void read_requesthdrs(rio_t *rp, int fd, int ptr)
     sprintf(header, "%sContent-length: %ld\r\n", header, sbuf.st_size);
     sprintf(header, "%sContent-type: %s\r\n\r\n", header, "text/plain");
     Rio_writen(fd, header, strlen(header));
-
+    
     srcp = Mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, ptr, 0);
     Close(ptr);
     Rio_writen(fd, srcp, sbuf.st_size);
