@@ -10,7 +10,7 @@
 
 void doit(int fd);
 //void read_requesthdrs(rio_t *rp);
-void read_requesthdrs(rio_t *rp, int fd, int ptr);
+void read_requesthdrs(rio_t *rp, int fd, char *hdbuf);
 int parse_uri(char *uri, char *filename, char *cgiargs);
 void serve_static(int fd, char *filename, int filesize);
 void get_filetype(char *filename, char *filetype);
@@ -53,22 +53,24 @@ void doit(int fd)
     char buf[MAXLINE], method[MAXLINE], uri[MAXLINE], version[MAXLINE];
     char filename[MAXLINE], cgiargs[MAXLINE];
     rio_t rio;
-    int ptr;
-
-    ptr = Open("header.txt", O_RDWR, 0);
+    
+    char hdbuf[MAXBUF];
 
     Rio_readinitb(&rio, fd);
     Rio_readlineb(&rio, buf, MAXLINE);
     printf("Request headers:\n");
     printf("%s", buf);
-    Write(ptr, buf, strlen(buf));
+
+    strcpy(hdbuf, "");
+    strcat(hdbuf, buf);
+
     sscanf(buf, "%s %s %s", method, uri, version);
     if (strcasecmp(method, "GET"))
     {
         clienterror(fd, method, "501", "Not implemented", "Tiny does not implement this method");
         return;
     }
-    read_requesthdrs(&rio, fd, ptr);
+    read_requesthdrs(&rio, fd, hdbuf);
 
     is_static = parse_uri(uri, filename, cgiargs);
     if (stat(filename, &sbuf) < 0)
@@ -113,36 +115,26 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longms
     Rio_writen(fd, body, strlen(body));
 }
 
-void read_requesthdrs(rio_t *rp, int fd, int ptr)
+void read_requesthdrs(rio_t *rp, int fd, char *hdbuf)
 {
-    char *srcp, buf[MAXLINE], header[MAXBUF];
-    struct stat sbuf;
+    char buf[MAXLINE], header[MAXBUF];
 
     Rio_readlineb(rp, buf, MAXLINE);
 
     while (strcmp(buf, "\r\n")) {
         Rio_readlineb(rp, buf, MAXLINE);
         printf("%s", buf);
-        Write(ptr, buf, strlen(buf)); // 받아다 파일에 쓰기
-    }
-
-    if (stat("header.txt", &sbuf) < 0)
-    {
-        clienterror(fd, "header.txt", "404", "Not found", "Tiny couldn't find this file");
-        return;
+        strcat(hdbuf, buf); // 받아다 쓰기
     }
 
     sprintf(header, "HTTP/1.0 200 OK\r\n");
     sprintf(header, "%sServer: Tiny Web Server\r\n", header);
     sprintf(header, "%sConnection: close\r\n", header);
-    sprintf(header, "%sContent-length: %ld\r\n", header, sbuf.st_size);
+    sprintf(header, "%sContent-length: %ld\r\n", header, strlen(hdbuf));
     sprintf(header, "%sContent-type: %s\r\n\r\n", header, "text/plain");
     Rio_writen(fd, header, strlen(header));
     
-    srcp = Mmap(0, sbuf.st_size, PROT_READ, MAP_PRIVATE, ptr, 0);
-    Close(ptr);
-    Rio_writen(fd, srcp, sbuf.st_size);
-    Munmap(srcp, sbuf.st_size);
+    Rio_writen(fd, hdbuf, strlen(hdbuf));
     return;
 }
 
