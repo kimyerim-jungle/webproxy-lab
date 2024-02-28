@@ -9,8 +9,7 @@
 #include "csapp.h"
 
 void doit(int fd);
-//void read_requesthdrs(rio_t *rp);
-void read_requesthdrs(rio_t *rp, int fd, char *hdbuf);
+void read_requesthdrs(rio_t *rp);
 int parse_uri(char *uri, char *filename, char *cgiargs);
 void serve_static(int fd, char *filename, int filesize);
 void get_filetype(char *filename, char *filetype);
@@ -54,23 +53,17 @@ void doit(int fd)
     char filename[MAXLINE], cgiargs[MAXLINE];
     rio_t rio;
     
-    char hdbuf[MAXBUF];
-
     Rio_readinitb(&rio, fd);
     Rio_readlineb(&rio, buf, MAXLINE);
     printf("Request headers:\n");
     printf("%s", buf);
-
-    strcpy(hdbuf, "");
-    strcat(hdbuf, buf);
-
     sscanf(buf, "%s %s %s", method, uri, version);
     if (strcasecmp(method, "GET"))
     {
         clienterror(fd, method, "501", "Not implemented", "Tiny does not implement this method");
         return;
     }
-    read_requesthdrs(&rio, fd, hdbuf);
+    read_requesthdrs(&rio, fd);
 
     is_static = parse_uri(uri, filename, cgiargs);
     if (stat(filename, &sbuf) < 0)
@@ -115,7 +108,7 @@ void clienterror(int fd, char *cause, char *errnum, char *shortmsg, char *longms
     Rio_writen(fd, body, strlen(body));
 }
 
-void read_requesthdrs(rio_t *rp, int fd, char *hdbuf)
+void read_requesthdrs(rio_t *rp)
 {
     char buf[MAXLINE], header[MAXBUF];
 
@@ -124,17 +117,7 @@ void read_requesthdrs(rio_t *rp, int fd, char *hdbuf)
     while (strcmp(buf, "\r\n")) {
         Rio_readlineb(rp, buf, MAXLINE);
         printf("%s", buf);
-        strcat(hdbuf, buf); // 받아다 쓰기
     }
-
-    sprintf(header, "HTTP/1.0 200 OK\r\n");
-    sprintf(header, "%sServer: Tiny Web Server\r\n", header);
-    sprintf(header, "%sConnection: close\r\n", header);
-    sprintf(header, "%sContent-length: %ld\r\n", header, strlen(hdbuf));
-    sprintf(header, "%sContent-type: %s\r\n\r\n", header, "text/plain");
-    Rio_writen(fd, header, strlen(header));
-    
-    Rio_writen(fd, hdbuf, strlen(hdbuf));
     return;
 }
 

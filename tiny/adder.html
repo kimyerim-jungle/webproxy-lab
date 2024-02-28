@@ -1,0 +1,19 @@
+<html>
+<head><title>adder</title>
+    <script>
+        function writeurl(){
+            var num1 = document.getElementById('num1').value;
+            var num2 = document.getElementById('num2').value;
+            var url = "/cgi-bin/adder?" + num1 + "&" + num2;
+
+            return url
+        }
+    </script>
+
+</head>
+<body> 
+<input type="text" id="num1">
+<input type="text" id="num2">
+<input type="button" value="add" onclick="document.location.href=writeurl()">
+</body>
+</html>
